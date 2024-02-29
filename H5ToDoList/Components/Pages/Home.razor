@@ -1,0 +1,37 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Authorization;
+@attribute [Authorize(Policy = "AuthenticatedUser")]
+@inject AuthenticationStateProvider _authenticationStateProvider;
+@inject Codes.EncryptionHandler _encryptionHandler;
+@inject Codes.AsymatriskEncryptionHandler _asymatriskEncryptionHandler;
+
+<PageTitle>Home</PageTitle>
+
+<h1>@_name</h1>
+<input type="text" @bind="CprNr" />
+
+
+@code {
+    private string? userName { get; set; }
+    private string? CprNr { get; set; }
+    private string? CprFromDB { get; set; }
+    private string? ToDoItem { get; set; } = "";
+    //private List<>? ToDoList { get; set; } = new List<>();
+
+
+    private string _name;
+
+    protected override void OnInitialized()
+    {
+       Codes.HashingHandler hashingHandler = new("Alina Kore");
+       string hashedValue = hashingHandler.HMACHashing();
+
+        Codes.HashingHandler hashingHandler2 = new("Alina Kore");
+        string hashedValue2 = hashingHandler2.HMACHashing();
+
+        bool isSame = hashedValue == hashedValue2;
+        _name = hashedValue;
+
+    }
+
+}
