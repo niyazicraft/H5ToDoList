@@ -2,7 +2,7 @@ using H5ToDoList.Codes;
 using H5ToDoList.Components;
 using H5ToDoList.Components.Account;
 using H5ToDoList.Data;
-
+using H5ToDoList.Models;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +21,7 @@ builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuth
 builder.Services.AddSingleton<EncryptionHandler>();
 builder.Services.AddSingleton<AsymatriskEncryptionHandler>();
 
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = IdentityConstants.ApplicationScheme;
@@ -32,6 +33,11 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
+
+var connectionString2 = builder.Configuration.GetConnectionString("ToDoConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+builder.Services.AddDbContext<ToDoDbContext>(options =>
+    options.UseSqlite(connectionString2));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 

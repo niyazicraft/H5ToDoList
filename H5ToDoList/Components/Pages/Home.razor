@@ -4,11 +4,53 @@
 @inject AuthenticationStateProvider _authenticationStateProvider;
 @inject Codes.EncryptionHandler _encryptionHandler;
 @inject Codes.AsymatriskEncryptionHandler _asymatriskEncryptionHandler;
+@inject Models.ToDoDbContext _toDoContext;
+
 
 <PageTitle>Home</PageTitle>
 
 <h1>@_name</h1>
-<input type="text" @bind="CprNr" />
+<h2>@userName</h2>
+
+@if (CprFromDB == null)
+{
+    <input type="text" @bind="CprNr" />
+    <button class="btn btn-primary" @onclick="SubmitCpr">Submit Cpr</button>
+}
+else
+{
+    <div>Cpr: @CprFromDB </div>
+    <div>
+        <input type="text" @bind="ToDoItem" />
+        <button class="btn btn-primary" @onclick="SubmitToDoList">Add</button>
+    </div>
+}
+
+<div style="margin-top:50px;">
+    @if (ToDoList != null && ToDoList.Count > 0)
+    {
+        <table border="1">
+            <thead>
+                <tr>
+                    <th>Decrypted Item</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in ToDoList)
+                {
+                    <tr>
+                        <td>(@item.Item)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <div>No items</div>
+    })
+</div>
+
 
 
 @code {
@@ -16,15 +58,16 @@
     private string? CprNr { get; set; }
     private string? CprFromDB { get; set; }
     private string? ToDoItem { get; set; } = "";
-    //private List<>? ToDoList { get; set; } = new List<>();
+    private List<H5ToDoList.Models.ToDoList>? ToDoList { get; set; } = new List<H5ToDoList.Models.ToDoList>();
+    private string? CprMessage { get; set; }
 
 
     private string _name;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-       Codes.HashingHandler hashingHandler = new("Alina Kore");
-       string hashedValue = hashingHandler.HMACHashing();
+        Codes.HashingHandler hashingHandler = new("Alina Kore");
+        string hashedValue = hashingHandler.HMACHashing();
 
         Codes.HashingHandler hashingHandler2 = new("Alina Kore");
         string hashedValue2 = hashingHandler2.HMACHashing();
@@ -32,6 +75,45 @@
         bool isSame = hashedValue == hashedValue2;
         _name = hashedValue;
 
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        userName = user.Identity.Name;
+
     }
 
+    private void SubmitCpr()
+    {
+        string HashedCpr = Codes.HashingHandler.BCryptHashing(CprNr);
+
+        var MatchingUser = _toDoContext.Cprs.FirstOrDefault(x => x.User == userName);
+        if (MatchingUser == null)
+        {
+            var cpr = new H5ToDoList.Models.Cpr
+            {
+                User = userName,
+                Cpr1 = HashedCpr
+            };
+            _toDoContext.Cprs.Add(cpr);
+            _toDoContext.SaveChanges();
+        }
+        else
+        {
+            bool MatchHashedValue = Codes.HashingHandler.BCryptVerfiyHashing(CprNr, MatchingUser.Cpr1);
+            if (MatchHashedValue)
+            {
+                ToDoList = _toDoContext.ToDoLists.Where(x => x.User == userName).ToList();
+                CprFromDB = _toDoContext.Cprs.FirstOrDefault(x => x.User == userName).Cpr1;
+                CprMessage = null!;
+            }
+            else
+            {
+                CprMessage = "Cpr is not correct";
+            }
+        }
+    }
+
+    private void SubmitToDoList()
+    {
+    }
 }
