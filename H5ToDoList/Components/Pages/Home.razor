@@ -16,14 +16,21 @@
 @if (CprFromDB == null)
 {
     <input type="text" @bind="CprNr" />
-    <button class="btn btn-primary" @onclick="SubmitCpr">Submit Cpr</button>
+    <button class="btn btn-primary" @onclick="SubmitCpr" disabled="@string.IsNullOrWhiteSpace(CprNr)">Submit Cpr</button>
 }
 else
 {
     <div>Cpr: @CprFromDB </div>
     <div>
         <input type="text" @bind="ToDoItem" />
-        <button class="btn btn-primary" @onclick="SubmitToDoList">Add new item</button>
+        <button class="btn btn-primary" @onclick="SubmitToDoList" disabled="@string.IsNullOrWhiteSpace(ToDoItem)">Add new item</button>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(CprMessage))
+{
+    <div class="@MessageClass" role="alert">
+        @CprMessage
     </div>
 }
 
@@ -54,15 +61,14 @@ else
     })
 </div>
 
-
-
 @code {
     private string? userName { get; set; }
     private string? CprNr { get; set; }
     private string? CprFromDB { get; set; }
     private string? ToDoItem { get; set; } = "";
     private List<H5ToDoList.Models.ToDoList>? ToDoList { get; set; } = new List<H5ToDoList.Models.ToDoList>();
-    private string? CprMessage { get; set; }
+    private string? CprMessage;
+    private string MessageClass { get; set; } = "alert alert-danger";
 
 
     private string _name;
@@ -87,47 +93,59 @@ else
 
     private void SubmitCpr()
     {
-        string HashedCpr = Codes.HashingHandler.BCryptHashing(CprNr);
+        if (!string.IsNullOrWhiteSpace(CprNr))
+        {
+            string HashedCpr = Codes.HashingHandler.BCryptHashing(CprNr);
 
-        var MatchingUser = _toDoContext.Cprs.FirstOrDefault(x => x.User == userName);
-        if (MatchingUser == null)
-        {
-            var cpr = new H5ToDoList.Models.Cpr
+            var MatchingUser = _toDoContext.Cprs.FirstOrDefault(x => x.User == userName);
+            if (MatchingUser == null)
             {
-                User = userName,
-                Cpr1 = HashedCpr
-            };
-            _toDoContext.Cprs.Add(cpr);
-            _toDoContext.SaveChanges();
-        }
-        else
-        {
-            bool MatchHashedValue = Codes.HashingHandler.BCryptVerfiyHashing(CprNr, MatchingUser.Cpr1);
-            if (MatchHashedValue)
-            {
-                ToDoList = _toDoContext.ToDoLists.Where(x => x.User == userName).ToList();
-                CprFromDB = _toDoContext.Cprs.FirstOrDefault(x => x.User == userName).Cpr1;
-                CprMessage = null!;
+                var cpr = new H5ToDoList.Models.Cpr
+                    {
+                        User = userName,
+                        Cpr1 = HashedCpr
+                    };
+                _toDoContext.Cprs.Add(cpr);
+                _toDoContext.SaveChanges();
             }
             else
             {
-                CprMessage = "Cpr is not correct";
+                bool MatchHashedValue = Codes.HashingHandler.BCryptVerfiyHashing(CprNr, MatchingUser.Cpr1);
+                if (MatchHashedValue)
+                {
+                    ToDoList = _toDoContext.ToDoLists.Where(x => x.User == userName).ToList();
+                    CprFromDB = _toDoContext.Cprs.FirstOrDefault(x => x.User == userName).Cpr1;
+                    CprMessage = null!;
+                }
+                else
+                {
+                    CprMessage = "Cpr is not correct";
+                    ToggleMessageClass();
+                }
             }
         }
     }
 
     private void SubmitToDoList()
     {
-        var newItem = new H5ToDoList.Models.ToDoList
-            {
-                User = userName,
-                Item = _symmetricEncryptionHandler.EncryptSymetrisk(ToDoItem)
-            };
+        if (!string.IsNullOrWhiteSpace(ToDoItem))
+        {
+            var newItem = new H5ToDoList.Models.ToDoList
+                {
+                    User = userName,
+                    Item = _symmetricEncryptionHandler.EncryptSymetrisk(ToDoItem)
+                };
 
             _toDoContext.ToDoLists.Add(newItem);
             _toDoContext.SaveChanges();
 
 
-            ToDoList = _toDoContext.ToDoLists.Where(x => x.User == userName).ToList();        
+            ToDoList = _toDoContext.ToDoLists.Where(x => x.User == userName).ToList();
+        }
+    }
+
+    private void ToggleMessageClass()
+    {
+        MessageClass = MessageClass == "alert alert-danger" ? "alert alert-warning" : "alert alert-danger";
     }
 }
