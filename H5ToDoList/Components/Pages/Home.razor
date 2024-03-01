@@ -4,6 +4,7 @@
 @inject AuthenticationStateProvider _authenticationStateProvider;
 @inject Codes.EncryptionHandler _encryptionHandler;
 @inject Codes.AsymatriskEncryptionHandler _asymatriskEncryptionHandler;
+@inject Codes.SymetriskEncryptionHandler _symmetricEncryptionHandler;
 @inject Models.ToDoDbContext _toDoContext;
 
 
@@ -22,7 +23,7 @@ else
     <div>Cpr: @CprFromDB </div>
     <div>
         <input type="text" @bind="ToDoItem" />
-        <button class="btn btn-primary" @onclick="SubmitToDoList">Add</button>
+        <button class="btn btn-primary" @onclick="SubmitToDoList">Add new item</button>
     </div>
 }
 
@@ -32,14 +33,16 @@ else
         <table border="1">
             <thead>
                 <tr>
-                    <th>Decrypted Item</th>
+                    <th>DecryptSymetrisk item</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var item in ToDoList)
                 {
                     <tr>
-                        <td>(@item.Item)</td>
+                        <td>
+                            @_symmetricEncryptionHandler.DecryptSymetrisk(item.Item)
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -115,5 +118,16 @@ else
 
     private void SubmitToDoList()
     {
+        var newItem = new H5ToDoList.Models.ToDoList
+            {
+                User = userName,
+                Item = _symmetricEncryptionHandler.EncryptSymetrisk(ToDoItem)
+            };
+
+            _toDoContext.ToDoLists.Add(newItem);
+            _toDoContext.SaveChanges();
+
+
+            ToDoList = _toDoContext.ToDoLists.Where(x => x.User == userName).ToList();        
     }
 }

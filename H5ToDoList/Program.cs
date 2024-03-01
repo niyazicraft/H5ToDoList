@@ -20,6 +20,7 @@ builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuth
 
 builder.Services.AddSingleton<EncryptionHandler>();
 builder.Services.AddSingleton<AsymatriskEncryptionHandler>();
+builder.Services.AddSingleton<SymetriskEncryptionHandler>();
 
 
 builder.Services.AddAuthentication(options =>
